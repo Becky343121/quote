@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>樂山水 報價系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+:root{
+  --bg:#F5F2EE;
+  --surface:#FFF;
+  --border:#E0DAD2;
+  --text:#1A1A1A;
+  --muted:#888078;
+  --accent:#4A7C59;
+  --accent-bg:#EAF3DE;
+  --accent-text:#2A5C39;
+  --warn-bg:#FEF3E2;
+  --warn-text:#8A5200;
+  --red:#C0392B;
+  --blue:#2A6BB0;
+  --r:14px;
+  --rs:10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; padding-bottom: 60px; }
+
+/* ── Header ── */
+.hdr { background: var(--accent); padding: 20px 16px; text-align: center; }
+.hdr h1 { color: #fff; font-size: 24px; font-weight: 700; }
+.hdr p { color: rgba(255,255,255,.75); font-size: 14px; margin-top: 3px; }
+
+/* ── Page ── */
+.page { padding: 12px 12px 0; width: 100%; }
+
+/* ── Section ── */
+.sec { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; width: 100%; }
+.sec-title { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px; }
+
+/* ── Calendar ── */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-nav-btn {
+  width: 48px; height: 48px; min-width: 48px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: var(--rs);
+  background: var(--bg); font-size: 22px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation; -webkit-user-select: none; user-select: none;
+}
+.cal-nav-btn:active { background: var(--border); }
+.cal-month { font-size: 18px; font-weight: 700; }
+
+/* DOW header */
+.cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  width: 100%;
+  margin-bottom: 4px;
+}
+.cal-dow-cell {
+  text-align: center; font-size: 13px; font-weight: 500;
+  color: var(--muted); padding: 6px 0;
+}
+.cal-dow-cell.sun { color: var(--red); }
+.cal-dow-cell.sat { color: var(--blue); }
+
+/* Grid cells */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  width: 100%;
+}
+.cd {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%; /* square via aspect ratio trick */
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+}
+.cd-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border-radius: 6px;
+}
+.cd.empty { cursor: default; pointer-events: none; }
+.cd.past { cursor: default; pointer-events: none; }
+.cd.past .cd-inner { color: #CCC; }
+.cd.sun .cd-inner { color: var(--red); }
+.cd.sat .cd-inner { color: var(--blue); }
+.cd.today .cd-inner { font-weight: 700; }
+.cd.today .cd-inner::after {
+  content: ''; position: absolute; bottom: 3px; left: 50%;
+  transform: translateX(-50%); width: 4px; height: 4px;
+  border-radius: 50%; background: var(--accent);
+}
+.cd.in-range .cd-inner { background: var(--accent-bg); border-radius: 0; }
+.cd.range-start .cd-inner { border-radius: 6px 0 0 6px; }
+.cd.range-end .cd-inner { border-radius: 0 6px 6px 0; }
+.cd.ci .cd-inner, .cd.co .cd-inner {
+  background: var(--accent); color: #fff !important; border-radius: 6px;
+}
+.cd.ci.has-range .cd-inner { border-radius: 6px 0 0 6px; }
+.cd.co.has-range .cd-inner { border-radius: 0 6px 6px 0; }
+.cd:not(.empty):not(.past):active .cd-inner { opacity: .7; }
+
+/* Date tags below calendar */
+.cal-tags { display: flex; gap: 8px; margin-top: 12px; }
+.cal-tag {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--rs); padding: 10px 12px;
+}
+.cal-tag.filled { background: var(--accent-bg); border-color: #C0D9C8; }
+.cal-tag-lbl { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .06em; margin-bottom: 3px; }
+.cal-tag-val { font-size: 14px; font-weight: 500; color: var(--accent-text); }
+.cal-tag.empty-val .cal-tag-val { color: var(--muted); font-weight: 400; }
+.nights-badge {
+  display: none; margin-top: 10px; background: var(--accent); color: #fff;
+  border-radius: var(--rs); padding: 10px 14px; font-size: 15px; font-weight: 500;
+}
+.cal-reset {
+  display: none; margin-top: 8px; font-size: 13px; color: var(--muted);
+  text-decoration: underline; cursor: pointer; text-align: right; padding: 4px 0;
+}
+
+/* ── Night rows ── */
+.night-row {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--rs); padding: 14px; margin-bottom: 8px;
+}
+.night-row:last-child { margin-bottom: 0; }
+.nr-lbl { font-size: 16px; font-weight: 500; }
+.nr-badge {
+  font-size: 11px; background: var(--warn-bg); color: var(--warn-text);
+  padding: 2px 8px; border-radius: 8px; font-weight: 700; margin-left: 6px;
+}
+.nr-date { font-size: 13px; color: var(--muted); margin-top: 4px; margin-bottom: 10px; }
+.nr-togs { display: flex; gap: 8px; }
+.nr-tog {
+  flex: 1; padding: 12px 0; border: 1.5px solid var(--border); border-radius: 20px;
+  font-size: 15px; cursor: pointer; background: var(--bg); color: var(--muted);
+  text-align: center; touch-action: manipulation;
+}
+.nr-tog.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.nr-price { font-size: 14px; color: var(--muted); margin-top: 8px; }
+.nr-price strong { color: var(--text); }
+
+/* ── Stepper ── */
+.field-block { margin-bottom: 18px; }
+.field-block:last-child { margin-bottom: 0; }
+.field-top {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 10px; flex-wrap: wrap; gap: 4px;
+}
+.field-lbl { font-size: 17px; font-weight: 500; }
+.field-hint { font-size: 12px; color: var(--muted); }
+.stepper { display: flex; width: 100%; }
+.sp-btn {
+  flex: 0 0 64px; width: 64px; height: 62px; min-width: 64px;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+  font-size: 32px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+  flex-shrink: 0;
+}
+.sp-btn.sp-l { border-radius: var(--rs) 0 0 var(--rs); border-right: none; }
+.sp-btn.sp-r { border-radius: 0 var(--rs) var(--rs) 0; border-left: none; }
+.sp-btn:active { background: var(--border); }
+.sp-val {
+  flex: 1; min-width: 0; height: 62px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700;
+}
+
+/* ── Pills (room selector) ── */
+.pills-block { margin-bottom: 18px; }
+.pills-block:last-child { margin-bottom: 0; }
+.pills-top {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 10px; flex-wrap: wrap; gap: 4px;
+}
+.pills {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px; width: 100%;
+}
+.pill {
+  height: 52px; border: 1.5px solid var(--border); border-radius: var(--rs);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 500; cursor: pointer;
+  background: var(--bg); color: var(--muted);
+  touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  min-width: 0;
+}
+.pill.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pill.dim { opacity: .28; pointer-events: none; }
+.room-sum {
+  font-size: 14px; color: var(--muted); margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7;
+}
+.room-sum strong { color: var(--accent-text); }
+
+/* ── Toggles ── */
+.tog-block { margin-bottom: 16px; }
+.tog-block:last-child { margin-bottom: 0; }
+.tog-lbl { font-size: 17px; font-weight: 500; margin-bottom: 10px; }
+.tog-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.tog {
+  padding: 12px 18px; border: 1.5px solid var(--border); border-radius: 20px;
+  font-size: 15px; cursor: pointer; background: var(--bg); color: var(--muted);
+  touch-action: manipulation;
+}
+.tog.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Go button ── */
+.go-btn {
+  width: 100%; padding: 18px; border: none; border-radius: var(--r);
+  background: var(--accent); color: #fff; font-size: 18px; font-weight: 700;
+  font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
+  touch-action: manipulation; margin-top: 4px;
+}
+.go-btn:active { opacity: .88; }
+
+/* ── Result ── */
+.res { display: none; margin-top: 12px; }
+.res-card {
+  background: var(--surface); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 16px;
+}
+.res-htitle { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .08em; margin-bottom: 12px; }
+.rline {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  font-size: 15px; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 10px;
+}
+.rline:last-of-type { border-bottom: none; }
+.rl { flex: 1; line-height: 1.5; }
+.rs { font-size: 12px; color: var(--muted); display: block; }
+.rv { white-space: nowrap; }
+.rv.bold { font-weight: 700; font-size: 16px; }
+.rtotal {
+  display: flex; justify-content: space-between; font-size: 20px; font-weight: 700;
+  padding: 12px 0 0; margin-top: 6px; border-top: 2px solid var(--text);
+}
+.disc-box {
+  margin-top: 12px; background: var(--accent-bg); border-radius: var(--rs);
+  padding: 14px; border: 1px solid #C0D9C8;
+}
+.disc-lbl { font-size: 13px; color: var(--accent-text); font-weight: 700; margin-bottom: 8px; }
+.disc-in {
+  width: 100%; border: 1.5px solid #C0D9C8; border-radius: var(--rs);
+  padding: 12px 14px; font-size: 18px; font-family: 'Noto Sans TC', sans-serif;
+  background: #fff; color: var(--text);
+}
+.disc-in:focus { outline: none; border-color: var(--accent); }
+.pc {
+  display: none; margin-top: 10px; background: #fff; border-radius: var(--rs);
+  padding: 12px; border: 1px solid #C0D9C8;
+}
+.pc-orig { font-size: 14px; color: var(--muted); text-decoration: line-through; }
+.pc-disc { font-size: 22px; font-weight: 700; color: var(--accent); }
+.pc-save { font-size: 13px; color: var(--warn-text); margin-top: 2px; }
+.copy-area {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--rs);
+  padding: 14px; margin-top: 12px; font-size: 14px; white-space: pre-wrap; line-height: 1.9;
+}
+.copy-btn {
+  width: 100%; margin-top: 10px; padding: 16px;
+  border: 2px solid var(--accent); border-radius: var(--r);
+  background: #fff; color: var(--accent); font-size: 17px; font-weight: 700;
+  font-family: 'Noto Sans TC', sans-serif; cursor: pointer; touch-action: manipulation;
+}
+.copy-btn.done { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>🏡 樂山水</h1>
+  <p>包棟報價系統</p>
+</div>
+
+<div class="page">
+
+  <!-- 1. 日曆 -->
+  <div class="sec">
+    <div class="sec-title">住宿日期</div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="cal-prev">‹</button>
+      <span class="cal-month" id="cal-month"></span>
+      <button class="cal-nav-btn" id="cal-next">›</button>
+    </div>
+    <div class="cal-dow">
+      <div class="cal-dow-cell sun">日</div>
+      <div class="cal-dow-cell">一</div>
+      <div class="cal-dow-cell">二</div>
+      <div class="cal-dow-cell">三</div>
+      <div class="cal-dow-cell">四</div>
+      <div class="cal-dow-cell">五</div>
+      <div class="cal-dow-cell sat">六</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-tags">
+      <div class="cal-tag empty-val" id="tag-ci">
+        <div class="cal-tag-lbl">入住</div>
+        <div class="cal-tag-val" id="tag-ci-val">請點選日期</div>
+      </div>
+      <div class="cal-tag empty-val" id="tag-co">
+        <div class="cal-tag-lbl">退房</div>
+        <div class="cal-tag-val" id="tag-co-val">請點選日期</div>
+      </div>
+    </div>
+    <div class="nights-badge" id="nights-badge"></div>
+    <div class="cal-reset" id="cal-reset">重新選擇日期</div>
+  </div>
+
+  <!-- 2. 各晚類型 -->
+  <div class="sec" id="nights-sec" style="display:none;">
+    <div class="sec-title">各晚日期類型</div>
+    <div id="night-rows"></div>
+  </div>
+
+  <!-- 3. 人數 -->
+  <div class="sec">
+    <div class="sec-title">入住人數</div>
+    <div class="field-block">
+      <div class="field-top">
+        <span class="field-lbl">大人</span>
+        <span class="field-hint">長按快速增加，最多 29 人</span>
+      </div>
+      <div class="stepper" id="adult-step"></div>
+    </div>
+    <div class="field-block">
+      <div class="field-top"><span class="field-lbl">小孩</span></div>
+      <div class="stepper" id="child-step"></div>
+    </div>
+  </div>
+
+  <!-- 4. 房間 -->
+  <div class="sec">
+    <div class="sec-title">房間配置（最多共 6 間）</div>
+    <div class="pills-block">
+      <div class="pills-top">
+        <span class="field-lbl">2 人房</span>
+        <span class="field-hint">平日 $3,000 ／ 假日 $3,600</span>
+      </div>
+      <div class="pills" id="r2-pills"></div>
+    </div>
+    <div class="pills-block">
+      <div class="pills-top">
+        <span class="field-lbl">4 人房</span>
+        <span class="field-hint">平日 $5,000 ／ 假日 $5,600</span>
+      </div>
+      <div class="pills" id="r4-pills"></div>
+    </div>
+    <div class="room-sum" id="room-sum">請選擇房間數量</div>
+  </div>
+
+  <!-- 5. 加床 -->
+  <div class="sec">
+    <div class="sec-title">加床人數</div>
+    <div class="field-block">
+      <div class="field-top">
+        <span class="field-lbl">平日加床</span>
+        <span class="field-hint">每人 $500，最多 21 人</span>
+      </div>
+      <div class="stepper" id="bed-wd-step"></div>
+    </div>
+    <div class="field-block">
+      <div class="field-top">
+        <span class="field-lbl">假日加床</span>
+        <span class="field-hint">每人 $800，最多 21 人</span>
+      </div>
+      <div class="stepper" id="bed-hd-step"></div>
+    </div>
+  </div>
+
+  <!-- 6. 加購 -->
+  <div class="sec">
+    <div class="sec-title">加購項目</div>
+    <div class="tog-block">
+      <div class="tog-lbl">烤肉清潔費</div>
+      <div class="tog-group">
+        <div class="tog on" id="bbq0">不烤肉</div>
+        <div class="tog" id="bbq1">是 +$1,000</div>
+      </div>
+    </div>
+    <div class="tog-block">
+      <div class="tog-lbl">寵物</div>
+      <div class="tog-group">
+        <div class="tog on" id="pet0">沒有</div>
+        <div class="tog" id="pet1">一隻 +$300</div>
+        <div class="tog" id="pet2">二隻 +$500</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="go-btn" id="go-btn">產生報價 →</button>
+
+  <!-- 結果 -->
+  <div class="res" id="res">
+    <div class="res-card">
+      <div class="res-htitle">報價明細</div>
+      <div id="rlines"></div>
+      <div class="rtotal"><span>試算總計</span><span id="rtot"></span></div>
+      <div class="disc-box">
+        <div class="disc-lbl">優惠整數價（選填）</div>
+        <input type="number" id="disc" class="disc-in" placeholder="例如：49000" inputmode="numeric">
+        <div class="pc" id="pc">
+          <div class="pc-orig" id="pc-orig"></div>
+          <div class="pc-disc" id="pc-disc"></div>
+          <div class="pc-save" id="pc-save"></div>
+        </div>
+      </div>
+    </div>
+    <div class="copy-area" id="ctext"></div>
+    <button class="copy-btn" id="copy-btn">複製報價文字</button>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Run everything after DOM is ready ──
+document.addEventListener('DOMContentLoaded', function() {
+
+const P = { r2:{wd:3000,hd:3600}, r4:{wd:5000,hd:5600}, bedWd:500, bedHd:800 };
+let st = { adult:2, child:0, r2:3, r4:3, bedWd:0, bedHd:0, bbq:false, pet:0, petLbl:'沒有', nightTypes:[] };
+let ciDate=null, coDate=null, pickStep=0, calY, calM;
+
+// ── Utils ──
+function sameDay(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function diffDays(a,b){ return Math.round((b-a)/86400000); }
+function fmt(n){ return '$'+Math.round(n).toLocaleString(); }
+function dayLbl(t){ return t==='wd'?'平日':'假日'; }
+function nightPrice(t){ return st.r2*P.r2[t]+st.r4*P.r4[t]; }
+function weekDay(d){ return['日','一','二','三','四','五','六'][d.getDay()]; }
+function fmtD(d){ return (d.getMonth()+1)+'月'+d.getDate()+'日（'+weekDay(d)+'）'; }
+
+// ── Calendar ──
+const MNAMES=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+function calInit(){
+  const n=new Date();
+  calY=n.getFullYear();
+  calM=n.getMonth();
+  renderCal();
+}
+
+document.getElementById('cal-prev').addEventListener('click', function(){
+  calM--; if(calM<0){calM=11;calY--;} renderCal();
+});
+document.getElementById('cal-next').addEventListener('click', function(){
+  calM++; if(calM>11){calM=0;calY++;} renderCal();
+});
+document.getElementById('cal-reset').addEventListener('click', function(){
+  ciDate=null; coDate=null; pickStep=0; st.nightTypes=[];
+  renderCal(); updateCalTags(); updateNightSec();
+  document.getElementById('cal-reset').style.display='none';
+});
+
+function renderCal(){
+  document.getElementById('cal-month').textContent = calY+'年 '+MNAMES[calM];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const first=new Date(calY,calM,1);
+  const dow=first.getDay();
+  const dim=new Date(calY,calM+1,0).getDate();
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+
+  // empty cells
+  for(let i=0;i<dow;i++){
+    const el=document.createElement('div');
+    el.className='cd empty';
+    el.innerHTML='<div class="cd-inner"></div>';
+    grid.appendChild(el);
+  }
+  // day cells
+  for(let d=1;d<=dim;d++){
+    const cur=new Date(calY,calM,d);
+    const isPast=cur<today;
+    const isSun=cur.getDay()===0;
+    const isSat=cur.getDay()===6;
+    const isCI=sameDay(cur,ciDate);
+    const isCO=sameDay(cur,coDate);
+    const hasRange=!!(ciDate&&coDate);
+    const inRange=hasRange&&cur>ciDate&&cur<coDate;
+    const isToday=sameDay(cur,today);
+
+    let cls='cd';
+    if(isPast) cls+=' past';
+    else { if(isSun) cls+=' sun'; if(isSat) cls+=' sat'; }
+    if(isToday&&!isCI&&!isCO) cls+=' today';
+    if(isCI){ cls+=' ci'; if(hasRange) cls+=' has-range'; }
+    if(isCO){ cls+=' co'; if(hasRange) cls+=' has-range'; }
+    if(inRange){
+      cls+=' in-range';
+      if(sameDay(addDays(ciDate,1),cur)) cls+=' range-start';
+      if(sameDay(addDays(coDate,-1),cur)) cls+=' range-end';
+    }
+
+    const el=document.createElement('div');
+    el.className=cls;
+    el.innerHTML='<div class="cd-inner">'+d+'</div>';
+
+    if(!isPast){
+      (function(y,m,day){
+        el.addEventListener('click', function(){ calPick(y,m,day); });
+      })(calY,calM,d);
+    }
+    grid.appendChild(el);
+  }
+}
+
+function calPick(y,m,d){
+  const picked=new Date(y,m,d);
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(picked<today) return;
+  if(pickStep===0||pickStep===2){
+    ciDate=picked; coDate=null; pickStep=1;
+  } else {
+    if(picked<=ciDate){ ciDate=picked; coDate=null; pickStep=1; }
+    else {
+      coDate=picked; pickStep=2;
+      const nights=diffDays(ciDate,coDate);
+      while(st.nightTypes.length<nights) st.nightTypes.push('wd');
+      st.nightTypes=st.nightTypes.slice(0,nights);
+      updateNightSec();
+      document.getElementById('cal-reset').style.display='block';
+    }
+  }
+  renderCal();
+  updateCalTags();
+}
+
+function updateCalTags(){
+  const tagCI=document.getElementById('tag-ci');
+  const tagCO=document.getElementById('tag-co');
+  const valCI=document.getElementById('tag-ci-val');
+  const valCO=document.getElementById('tag-co-val');
+  const nb=document.getElementById('nights-badge');
+  if(ciDate){
+    tagCI.classList.add('filled'); tagCI.classList.remove('empty-val');
+    valCI.textContent=fmtD(ciDate);
+  } else {
+    tagCI.classList.remove('filled'); tagCI.classList.add('empty-val');
+    valCI.textContent='請點選日期';
+  }
+  if(coDate){
+    tagCO.classList.add('filled'); tagCO.classList.remove('empty-val');
+    valCO.textContent=fmtD(coDate);
+    nb.textContent='共 '+diffDays(ciDate,coDate)+' 晚';
+    nb.style.display='block';
+  } else {
+    tagCO.classList.remove('filled'); tagCO.classList.add('empty-val');
+    valCO.textContent='請點選日期';
+    nb.style.display='none';
+  }
+}
+
+function updateNightSec(){
+  const sec=document.getElementById('nights-sec');
+  if(!ciDate||!coDate){ sec.style.display='none'; return; }
+  const nights=diffDays(ciDate,coDate);
+  sec.style.display='block';
+  const el=document.getElementById('night-rows');
+  el.innerHTML='';
+  for(let i=0;i<nights;i++){
+    const d=addDays(ciDate,i);
+    const t=st.nightTypes[i]||'wd';
+    const base=nightPrice(t);
+    const p=i>=1?Math.round(base*0.9):base;
+    const row=document.createElement('div');
+    row.className='night-row';
+    row.innerHTML=
+      '<div class="nr-lbl">第 '+(i+1)+' 晚'+(i>=1?'<span class="nr-badge">9折</span>':'')+'</div>'+
+      '<div class="nr-date">'+fmtD(d)+'</div>'+
+      '<div class="nr-togs">'+
+        '<div class="nr-tog'+(t==='wd'?' on':'')+'" data-night="'+i+'" data-type="wd">平日</div>'+
+        '<div class="nr-tog'+(t==='hd'?' on':'')+'" data-night="'+i+'" data-type="hd">假日</div>'+
+      '</div>'+
+      '<div class="nr-price">'+(i>=1?fmt(base)+' × 0.9 = <strong>'+fmt(p)+'</strong>':'<strong>'+fmt(p)+'</strong>')+'</div>';
+    el.appendChild(row);
+  }
+  // attach toggle events
+  el.querySelectorAll('.nr-tog').forEach(function(tog){
+    tog.addEventListener('click', function(){
+      const night=parseInt(this.dataset.night);
+      const type=this.dataset.type;
+      st.nightTypes[night]=type;
+      updateNightSec();
+    });
+  });
+}
+
+// ── Stepper ──
+function makeStepper(id, init, min, max, cb){
+  const wrap=document.getElementById(id);
+  if(!wrap) return;
+  let val=init, timer, interval;
+  const btn_m=document.createElement('button');
+  const val_el=document.createElement('div');
+  const btn_p=document.createElement('button');
+  btn_m.className='sp-btn sp-l'; btn_m.textContent='−'; btn_m.type='button';
+  val_el.className='sp-val'; val_el.textContent=val;
+  btn_p.className='sp-btn sp-r'; btn_p.textContent='+'; btn_p.type='button';
+  wrap.appendChild(btn_m); wrap.appendChild(val_el); wrap.appendChild(btn_p);
+
+  function set(n){ val=Math.min(max,Math.max(min,n)); val_el.textContent=val; cb(val); }
+  function startHold(delta){
+    set(val+delta);
+    timer=setTimeout(function(){ interval=setInterval(function(){ set(val+delta); },80); },500);
+  }
+  function stopHold(){ clearTimeout(timer); clearInterval(interval); }
+
+  btn_m.addEventListener('mousedown', function(){ startHold(-1); });
+  btn_m.addEventListener('touchstart', function(e){ e.preventDefault(); startHold(-1); }, {passive:false});
+  btn_p.addEventListener('mousedown', function(){ startHold(1); });
+  btn_p.addEventListener('touchstart', function(e){ e.preventDefault(); startHold(1); }, {passive:false});
+  document.addEventListener('mouseup', stopHold);
+  document.addEventListener('touchend', stopHold);
+  document.addEventListener('touchcancel', stopHold);
+}
+
+makeStepper('adult-step', 2, 1, 29, function(v){ st.adult=v; });
+makeStepper('child-step', 0, 0, 20, function(v){ st.child=v; });
+makeStepper('bed-wd-step', 0, 0, 21, function(v){ st.bedWd=v; });
+makeStepper('bed-hd-step', 0, 0, 21, function(v){ st.bedHd=v; });
+
+// ── Pills ──
+function renderPills(){
+  const MAX=6;
+  ['r2','r4'].forEach(function(k){
+    const other=k==='r2'?'r4':'r2';
+    const el=document.getElementById(k+'-pills');
+    if(!el) return;
+    el.innerHTML='';
+    for(let i=0;i<=6;i++){
+      const over=i+st[other]>MAX&&i!==st[k];
+      const pill=document.createElement('div');
+      pill.className='pill'+(i===st[k]?' on':'')+(over?' dim':'');
+      pill.textContent=i;
+      if(!over){
+        (function(key,val){
+          pill.addEventListener('click', function(){
+            st[key]=val; renderPills(); updateRoomSum(); updateNightSec();
+          });
+        })(k,i);
+      }
+      el.appendChild(pill);
+    }
+  });
+}
+renderPills();
+
+function updateRoomSum(){
+  const tot=st.r2+st.r4;
+  const el=document.getElementById('room-sum');
+  if(!tot){ el.innerHTML='請選擇房間數量'; return; }
+  const cfg=[...Array(st.r4).fill(4),...Array(st.r2).fill(2)].join(' / ');
+  el.innerHTML='<strong>'+tot+'房包棟</strong>　房型：'+cfg+'　客房均附衛浴';
+}
+updateRoomSum();
+
+// ── Toggles ──
+document.getElementById('bbq0').addEventListener('click', function(){ st.bbq=false; document.getElementById('bbq0').classList.add('on'); document.getElementById('bbq1').classList.remove('on'); });
+document.getElementById('bbq1').addEventListener('click', function(){ st.bbq=true; document.getElementById('bbq1').classList.add('on'); document.getElementById('bbq0').classList.remove('on'); });
+document.getElementById('pet0').addEventListener('click', function(){ st.pet=0; st.petLbl='沒有'; ['pet0','pet1','pet2'].forEach(function(id){ document.getElementById(id).classList.remove('on'); }); document.getElementById('pet0').classList.add('on'); });
+document.getElementById('pet1').addEventListener('click', function(){ st.pet=300; st.petLbl='一隻'; ['pet0','pet1','pet2'].forEach(function(id){ document.getElementById(id).classList.remove('on'); }); document.getElementById('pet1').classList.add('on'); });
+document.getElementById('pet2').addEventListener('click', function(){ st.pet=500; st.petLbl='二隻'; ['pet0','pet1','pet2'].forEach(function(id){ document.getElementById(id).classList.remove('on'); }); document.getElementById('pet2').classList.add('on'); });
+
+// ── Calc ──
+document.getElementById('go-btn').addEventListener('click', function(){
+  if(!ciDate||!coDate){ alert('請先選擇入住和退房日期'); return; }
+  if(st.r2+st.r4===0){ alert('請選擇房間數量'); return; }
+  const nights=diffDays(ciDate,coDate);
+  let lines=[], roomTotal=0;
+  for(let i=0;i<nights;i++){
+    const t=st.nightTypes[i]||'wd';
+    const base=nightPrice(t);
+    const p=i>=1?Math.round(base*0.9):base;
+    roomTotal+=p;
+    lines.push({lbl:'第'+(i+1)+'晚（'+dayLbl(t)+'）'+(i>=1?' × 0.9':''),sub:'2人房×'+st.r2+' + 4人房×'+st.r4,val:fmt(p)});
+  }
+  if(nights>1) lines.push({lbl:'房價小計',val:fmt(roomTotal),bold:true});
+  const bedT=st.bedWd*P.bedWd+st.bedHd*P.bedHd;
+  if(st.bedWd>0) lines.push({lbl:'平日加床（'+st.bedWd+'人）',sub:st.bedWd+'人 × $'+P.bedWd,val:fmt(st.bedWd*P.bedWd)});
+  if(st.bedHd>0) lines.push({lbl:'假日加床（'+st.bedHd+'人）',sub:st.bedHd+'人 × $'+P.bedHd,val:fmt(st.bedHd*P.bedHd)});
+  if(st.bbq) lines.push({lbl:'烤肉清潔費',val:'$1,000'});
+  if(st.pet>0) lines.push({lbl:'寵物費（'+st.petLbl+'）',val:fmt(st.pet)});
+  const grand=roomTotal+bedT+(st.bbq?1000:0)+st.pet;
+
+  document.getElementById('rlines').innerHTML=lines.map(function(l){
+    return '<div class="rline"><div class="rl">'+l.lbl+(l.sub?'<span class="rs">'+l.sub+'</span>':'')+'</div><span class="rv'+(l.bold?' bold':'')+'">'+l.val+'</span></div>';
+  }).join('');
+  document.getElementById('rtot').textContent=fmt(grand);
+  document.getElementById('disc').value='';
+  document.getElementById('pc').style.display='none';
+  window._S={roomTotal,grand,nights};
+  genText(null);
+  const res=document.getElementById('res');
+  res.style.display='block';
+  setTimeout(function(){ res.scrollIntoView({behavior:'smooth',block:'start'}); },120);
+});
+
+document.getElementById('disc').addEventListener('input', function(){
+  const v=parseInt(this.value)||null;
+  const pc=document.getElementById('pc');
+  if(v&&window._S){
+    pc.style.display='block';
+    document.getElementById('pc-orig').textContent=v<window._S.grand?'原價 '+fmt(window._S.grand)+' 元':'';
+    document.getElementById('pc-disc').textContent='優惠價 '+fmt(v)+' 元';
+    document.getElementById('pc-save').textContent=v<window._S.grand?'省下 '+fmt(window._S.grand-v)+' 元':'';
+  } else pc.style.display='none';
+  genText(v);
+});
+
+function genText(disc){
+  if(!window._S||!ciDate||!coDate) return;
+  const S=window._S;
+  const ciS=(ciDate.getMonth()+1)+'月'+ciDate.getDate()+'日';
+  const coS=(coDate.getMonth()+1)+'月'+coDate.getDate()+'日';
+  const tot=st.r2+st.r4;
+  const cfg=[...Array(st.r4).fill(4),...Array(st.r2).fill(2)].join(' / ');
+  let tx='■ 樂山水：'+tot+'房包棟\n房型：'+cfg+'　客房均附衛浴\n\n';
+  tx+='入住日期：'+ciS+' - '+coS+'\n入住人數：大人 '+st.adult+' 位｜小孩 '+st.child+' 位\n';
+  for(let i=0;i<S.nights;i++){
+    const tp=st.nightTypes[i]||'wd';
+    const base=nightPrice(tp);
+    const p=i>=1?Math.round(base*0.9):base;
+    tx+='\n第'+(i+1)+'晚（'+dayLbl(tp)+'）'+(i>=1?'續住優惠':'')+'\n';
+    tx+='　2人房 '+fmt(P.r2[tp])+' × '+st.r2+' 間 = '+fmt(P.r2[tp]*st.r2)+'\n';
+    tx+='　4人房 '+fmt(P.r4[tp])+' × '+st.r4+' 間 = '+fmt(P.r4[tp]*st.r4)+'\n';
+    tx+=(i>=1)?'　小計 '+fmt(base)+' × 0.9 = '+fmt(p)+'\n':'　小計：'+fmt(p)+'\n';
+  }
+  tx+='\n房價小計：'+fmt(S.roomTotal)+' 元\n';
+  if(st.bedWd>0) tx+='■ 平日加床（'+st.bedWd+'人）：+'+fmt(st.bedWd*P.bedWd)+'\n';
+  if(st.bedHd>0) tx+='■ 假日加床（'+st.bedHd+'人）：+'+fmt(st.bedHd*P.bedHd)+'\n';
+  if(st.bbq) tx+='■ 烤肉清潔費：+$1,000\n';
+  if(st.pet>0) tx+='■ 寵物費（'+st.petLbl+'）：+'+fmt(st.pet)+'\n';
+  tx+=disc?'\n原價：'+fmt(S.grand)+' 元\n■ 包棟優惠價：'+fmt(disc)+' 元\n':'\n💰 合計：'+fmt(S.grand)+' 元\n';
+  tx+='■ 備有下午茶點心\n■ 隔天會贈送早餐\n📌 本報價保留 24 小時，確認後支付訂金即可完成預訂！';
+  document.getElementById('ctext').textContent=tx;
+}
+
+document.getElementById('copy-btn').addEventListener('click', function(){
+  const txt=document.getElementById('ctext').textContent;
+  const btn=this;
+  function ok(){ btn.textContent='✓ 已複製！'; btn.classList.add('done'); setTimeout(function(){ btn.textContent='複製報價文字'; btn.classList.remove('done'); },2500); }
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(ok).catch(function(){ fb(txt); ok(); }); }
+  else { fb(txt); ok(); }
+});
+function fb(txt){
+  const ta=document.createElement('textarea');
+  ta.value=txt; ta.style.cssText='position:fixed;opacity:0;top:0;left:0;';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+// ── Init calendar, then set default dates ──
+calInit();
+(function(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const tomorrow=new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  ciDate=today; coDate=tomorrow; pickStep=2;
+  const nights=diffDays(ciDate,coDate);
+  while(st.nightTypes.length<nights) st.nightTypes.push('wd');
+  st.nightTypes=st.nightTypes.slice(0,nights);
+  renderCal(); updateCalTags(); updateNightSec();
+  document.getElementById('cal-reset').style.display='block';
+})();
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
