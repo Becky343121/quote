@@ -369,7 +369,7 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
     <div class="field-block">
       <div class="field-top">
         <span class="field-lbl">平日加床</span>
-        <span class="field-hint">每人 $500，最多 21 人</span>
+        <span class="field-hint">每人 $600，最多 21 人</span>
       </div>
       <div class="stepper" id="bed-wd-step"></div>
     </div>
@@ -430,7 +430,7 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
 // ── Run everything after DOM is ready ──
 document.addEventListener('DOMContentLoaded', function() {
 
-const P = { r2:{wd:3000,hd:3600}, r4:{wd:5000,hd:5600}, bedWd:500, bedHd:800 };
+const P = { r2:{wd:3000,hd:3600}, r4:{wd:5000,hd:5600}, bedWd:600, bedHd:800 };
 let st = { adult:2, child:0, r2:3, r4:3, bedWd:0, bedHd:0, bbq:false, pet:0, petLbl:'沒有', nightTypes:[] };
 let ciDate=null, coDate=null, pickStep=0, calY, calM;
 
@@ -746,7 +746,7 @@ function genText(disc){
   if(st.bbq) tx+='■ 烤肉清潔費：+$1,000\n';
   if(st.pet>0) tx+='■ 寵物費（'+st.petLbl+'）：+'+fmt(st.pet)+'\n';
   tx+=disc?'\n原價：'+fmt(S.grand)+' 元\n■ 包棟優惠價：'+fmt(disc)+' 元\n':'\n💰 合計：'+fmt(S.grand)+' 元\n';
-  tx+='■ 備有下午茶點心\n■ 隔天會贈送早餐\n📌 本報價保留 24 小時，確認後支付訂金即可完成預訂！';
+  tx+='■ 備有下午茶點心\n■ 隔天會贈送早餐\n📌 本報價保留 24 小時，確認後支付3成訂金即可完成預訂！';
   document.getElementById('ctext').textContent=tx;
 }
 
