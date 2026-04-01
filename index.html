@@ -744,7 +744,7 @@ function genText(disc){
     tx+='　4人房 '+fmt(P.r4[tp])+' × '+st.r4+' 間 = '+fmt(P.r4[tp]*st.r4)+'\n';
     tx+=(i>=1)?'　小計 '+fmt(base)+' × 0.9 = '+fmt(p)+'\n':'　小計：'+fmt(p)+'\n';
   }
-  tx+='房價小計：'+fmt(S.roomTotal)+' 元';
+  tx+='\n房價小計：'+fmt(S.roomTotal)+' 元';
   var hasExtra=st.bed>0||st.bbq||st.pet>0;
   if(hasExtra){
     tx+='\n──────────\n';
@@ -756,7 +756,7 @@ function genText(disc){
   }
   if(disc){
     tx+='\n原價合計：'+fmt(S.grand)+' 元\n';
-    tx+='◆ 包棟優惠價：'+fmt(disc)+' 元 ◆\n';
+    tx+='◆ 包棟優惠價：'+fmt(disc)+' 元 ◆';
   } else {
     tx+='\n◆ 合計：'+fmt(S.grand)+' 元 ◆';
   }
