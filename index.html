@@ -745,11 +745,22 @@ function genText(disc){
     tx+=(i>=1)?'　小計 '+fmt(base)+' × 0.9 = '+fmt(p)+'\n':'　小計：'+fmt(p)+'\n';
   }
   tx+='\n房價小計：'+fmt(S.roomTotal)+' 元\n';
-  if(st.bed>0) tx+='■ 加床費用（'+st.bed+'人 × $800 × '+S.nights+'晚）：+'+fmt(st.bed*P.bed*S.nights)+'\n';
-  if(st.bbq) tx+='■ 烤肉清潔費：+$1,000\n';
-  if(st.pet>0) tx+='■ 寵物費（'+st.petLbl+'）：+'+fmt(st.pet)+'\n';
-  tx+=disc?'\n原價：'+fmt(S.grand)+' 元\n 包棟優惠價：'+fmt(disc)+' 元\n':'\n💰 合計：'+fmt(S.grand)+' 元\n';
-  tx+='\n◆────────────◆\n';
+  var hasExtra=st.bed>0||st.bbq||st.pet>0;
+  if(hasExtra){
+    tx+='\n──────────\n';
+    tx+='加購項目\n';
+    if(st.bed>0) tx+='　加床費用（'+st.bed+'人 × $800 × '+S.nights+'晚）：'+fmt(st.bed*P.bed*S.nights)+'\n';
+    if(st.bbq) tx+='　烤肉清潔費：$1,000\n';
+    if(st.pet>0) tx+='　寵物費（'+st.petLbl+'）：'+fmt(st.pet)+'\n';
+    tx+='──────────\n';
+  }
+  if(disc){
+    tx+='\n原價合計：'+fmt(S.grand)+' 元\n';
+    tx+='◆ 包棟優惠價：'+fmt(disc)+' 元 ◆\n';
+  } else {
+    tx+='\n◆ 合計：'+fmt(S.grand)+' 元 ◆\n';
+  }
+  tx+='\n──────────\n';
   tx+='■ 備有下午茶點心\n■ 隔天會贈送早餐\n📌 本報價保留 24 小時，確認後支付訂金即可完成預訂！';
   document.getElementById('ctext').textContent=tx;
 }
