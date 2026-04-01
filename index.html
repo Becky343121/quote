@@ -747,7 +747,7 @@ function genText(disc){
   tx+='房價小計：'+fmt(S.roomTotal)+' 元';
   var hasExtra=st.bed>0||st.bbq||st.pet>0;
   if(hasExtra){
-    tx+='──────────\n';
+    tx+='\n──────────\n';
     tx+='加購項目\n';
     if(st.bed>0) tx+='　加床費用（'+st.bed+'人 × $800 × '+S.nights+'晚）：'+fmt(st.bed*P.bed*S.nights)+'\n';
     if(st.bbq) tx+='　烤肉清潔費：$1,000\n';
