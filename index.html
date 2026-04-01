@@ -748,7 +748,9 @@ function genText(disc){
   if(st.bed>0) tx+='■ 加床費用（'+st.bed+'人 × $800 × '+S.nights+'晚）：+'+fmt(st.bed*P.bed*S.nights)+'\n';
   if(st.bbq) tx+='■ 烤肉清潔費：+$1,000\n';
   if(st.pet>0) tx+='■ 寵物費（'+st.petLbl+'）：+'+fmt(st.pet)+'\n';
-  tx+=disc?'\n原價：'+fmt(S.grand)+' 元\n■ 包棟優惠價：'+fmt(disc)+' 元\n':'\n💰 合計：'+fmt(S.grand)+' 元\n';
+  tx+='\n◆─────────────────◆\n';
+  tx+=disc?'\n原價：'+fmt(S.grand)+' 元\n 包棟優惠價：'+fmt(disc)+' 元\n':'\n💰 合計：'+fmt(S.grand)+' 元\n';
+  tx+='\n◆─────────────────◆\n';
   tx+='■ 備有下午茶點心\n■ 隔天會贈送早餐\n📌 本報價保留 24 小時，確認後支付訂金即可完成預訂！';
   document.getElementById('ctext').textContent=tx;
 }
